@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>example-basic.c</title>
+  <link href="../../../favicon.ico" rel="icon">
+  <link rel="stylesheet" href="../css.css">
+  <style type="text/css">
+    a.fnlink {text-decoration: none}
+    a.fnlink:hover {text-decoration: underline}
+  </style>
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div id="jump_to">
+    Jump To &hellip;
+    <div id="jump_wrapper">
+      <div id="jump_page">
+        <a class="source" href="../../index.html#v0.1">API Docs</a>
+          <a class="source" href="example-basic.html">example-basic.c</a>
+      </div>
+    </div>
+  </div>
+  <div class=docs><h1>Example file example-basic.c</h1></div>
+  <div id='section-1'>
+    <div class="docs">
+      <div class="pilwrap">
+        <a class="pilcrow" href="#section-1">Section 1:</a>
+      </div>
+      <p>This example illustrates the basic functionalities of the GULL library,
+i.e. loading a snapshot of the geomagnetic field and computing its components
+at some Earth location. It also provides a simple example of GULL&#39;s error
+handling using a user defined <em>**gull<em>handle</em>cb</em>* callback.</p>
+    </div>
+    <div class="code">
+      <div class='highlight'><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;gull.h&quot;</span><span class="cp"></span>
+
+<span class="cm">/* Handle for a snapshot of the geomagnetic field. */</span>
+<span class="k">static</span> <span class="k">struct</span> <span class="n"><a href="../../index.html#v0.1/type/gull_snapshot">gull_snapshot</a></span> <span class="o">*</span> <span class="n">snapshot</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+<span class="cm">/* Error handler: dump any error message and exit to the OS. */</span>
+<span class="kt">void</span> <span class="nf">handle_error</span><span class="p">(</span><span class="k">enum</span> <span class="n"><a href="../../index.html#v0.1/type/gull_return">gull_return</a></span> <span class="n">rc</span><span class="p">,</span> <span class="n"><a href="../../index.html#v0.1/group/callback/gull_function_t">gull_function_t</a></span> <span class="o">*</span> <span class="n">caller</span><span class="p">,</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">file</span><span class="p">,</span> <span class="kt">int</span> <span class="n">line</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="cm">/* Dump an error message. */</span>
+  <span class="n">gull_error_print</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">caller</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">line</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+  <span class="cm">/* Finalise and exit to the OS. */</span>
+  <span class="n"><a name="gull_snapshot_destroy-2" class="fnlink" href="../../index.html#v0.1/group/snapshot/gull_snapshot_destroy">gull_snapshot_destroy</a></span><span class="p">(</span><span class="o">&amp;</span><span class="n">snapshot</span><span class="p">);</span>
+  <span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span></pre></div>
+    </div>
+  </div>
+  <div id='section-2'>
+    <div class="docs">
+      <div class="pilwrap">
+        <a class="pilcrow" href="#section-2">Section 2:</a>
+      </div>
+      <p>First let us set an error handler for GULL library functions. Most of GULL&#39;s
+library functions return a <code><a href="../../index.html#v0.1/type/gull_return">gull_return</a></code> code that cand be checked explicitly
+or catched by a user defined error handler.</p>
+    </div>
+    <div class="code">
+      <div class='highlight'><pre>  <span class="cm">/* Register the error handler for GULL library functions. */</span>
+  <span class="n"><a name="gull_error_handler_set-6" class="fnlink" href="../../index.html#v0.1/group/error/gull_error_handler_set">gull_error_handler_set</a></span><span class="p">(</span><span class="o">&amp;</span><span class="n">handle_error</span><span class="p">);</span></pre></div>
+    </div>
+  </div>
+  <div id='section-3'>
+    <div class="docs">
+      <div class="pilwrap">
+        <a class="pilcrow" href="#section-3">Section 3:</a>
+      </div>
+      <p>Let us now load a snapshot of the geomagnetic field from the disk and show
+how to access its meta-data.</p>
+    </div>
+    <div class="code">
+      <div class='highlight'><pre>  <span class="cm">/* Create a snapshot of the magnetic field. */</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">path</span> <span class="o">=</span> <span class="s">&quot;data/IGRF12.COF&quot;</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">int</span> <span class="n">day</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">month</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">year</span> <span class="o">=</span> <span class="mi">2016</span><span class="p">;</span>
+  <span class="n"><a name="gull_snapshot_create-1" class="fnlink" href="../../index.html#v0.1/group/snapshot/gull_snapshot_create">gull_snapshot_create</a></span><span class="p">(</span><span class="o">&amp;</span><span class="n">snapshot</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+
+  <span class="kt">int</span> <span class="n">order</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">z_min</span><span class="p">,</span> <span class="n">z_max</span><span class="p">;</span>
+  <span class="n"><a name="gull_snapshot_info-5" class="fnlink" href="../../index.html#v0.1/group/snapshot/gull_snapshot_info">gull_snapshot_info</a></span><span class="p">(</span><span class="n">snapshot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">order</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">z_min</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">z_max</span><span class="p">);</span>
+
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;# Snapshot</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;- date       : %d/%d/%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">year</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;- data set   : %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;- altitude   : [%.0lf, %.0lf] (m)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">z_min</span><span class="p">,</span> <span class="n">z_max</span><span class="p">);</span></pre></div>
+    </div>
+  </div>
+  <div id='section-4'>
+    <div class="docs">
+      <div class="pilwrap">
+        <a class="pilcrow" href="#section-4">Section 4:</a>
+      </div>
+      <p>Then, let us show how to get the corresponding geomagnetic components at
+some specific location on Earth. The components are given in unit Tesla in
+<strong>E</strong>ast, <strong>North</strong> and <strong>U</strong>pward (E,N,U) coordinates.</p>
+
+    </div>
+    <div class="code">
+      <div class='highlight'><pre>  <span class="cm">/*</span>
+<span class="cm">   * Get the components at Auberge des Gros Manaux, Puy de Dome, France.</span>
+<span class="cm">   */</span>
+  <span class="k">const</span> <span class="kt">double</span> <span class="n">latitude</span> <span class="o">=</span> <span class="mf">45.76415653</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">double</span> <span class="n">longitude</span> <span class="o">=</span> <span class="mf">2.95536402</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">double</span> <span class="n">altitude</span> <span class="o">=</span> <span class="mf">1090.</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">field</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+  <span class="n"><a name="gull_snapshot_field-4" class="fnlink" href="../../index.html#v0.1/group/snapshot/gull_snapshot_field">gull_snapshot_field</a></span><span class="p">(</span><span class="n">snapshot</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">altitude</span><span class="p">,</span> <span class="n">field</span><span class="p">);</span>
+
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;# Geomagnetic field</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;- location   : [%.5lf, %.5lf] (deg)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+    <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;- components : [%.0lf, %.0lf, %.0lf] (nT)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+    <span class="n">field</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mf">1E+09</span><span class="p">,</span> <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="mf">1E+09</span><span class="p">,</span> <span class="n">field</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="mf">1E+09</span><span class="p">);</span>
+
+  <span class="cm">/* Finalise and exit to the OS. */</span>
+  <span class="n"><a name="gull_snapshot_destroy-3" class="fnlink" href="../../index.html#v0.1/group/snapshot/gull_snapshot_destroy">gull_snapshot_destroy</a></span><span class="p">(</span><span class="o">&amp;</span><span class="n">snapshot</span><span class="p">);</span>
+  <span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+</div>
+</body>
