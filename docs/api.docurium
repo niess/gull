@@ -1,0 +1,12 @@
+{
+ "name":   "GULL",
+ "github": "niess/gull",
+ "input":  "include",
+ "output": "docs",
+ "favicon": "../favicon.ico",
+ "logo": ["../images/gull-black.png", "../index.html"],
+ "prefix": "gull_",
+ "branch": "docs-pages",
+ "examples": "examples",
+ "legacy": {"input": {"include": ["v0.1"]}}
+}

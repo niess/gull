@@ -483,9 +483,9 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 	}
 
 	/* Fill and return. */
-	magnet[0] = (x*cd+z*sd)*1E-09;
-	magnet[1] = y*1E-09;
-	magnet[2] = (z*cd-x*sd)*1E-09;
+	magnet[0] = y*1E-09;		/* East.   */
+	magnet[1] = (x*cd+z*sd)*1E-09;	/* North.  */
+	magnet[2] = -(z*cd-x*sd)*1E-09;	/* Upward. */
 
 	return GULL_RETURN_SUCCESS;
 }
