@@ -35,8 +35,8 @@ enum gull_return {
 	GULL_RETURN_FORMAT_ERROR,
 	/** Some memory couldn't be allocated. */
 	GULL_RETURN_MEMORY_ERROR,
-	/** No valid model could be found. */
-	GULL_RETURN_MISSING_MODEL,
+	/** No valid data could be found. */
+	GULL_RETURN_MISSING_DATA,
 	/** A file couldn't be opened or found. */
 	GULL_RETURN_PATH_ERROR,
 	/** The number of GULL error codes. */
@@ -71,27 +71,28 @@ typedef void gull_handler_cb(enum gull_return rc, gull_function_t * caller,
 	const char * file, int line);
 
 /**
- * Opaque structure for handling magnetic models.
+ * Opaque structure for handling snapshots of the geomagnetic field.
  */
-struct gull_model;
+struct gull_snapshot;
 
 
 /**
- * Create a geomagnetic model.
+ * Create a snapshot of a geomagnetic model.
  *
- * @param model   A handle to the geomagnetic model data.
- * @param path    The file containing the geomagnetic data.
- * @param day     The day in the month, i.e. in [1,31].
- * @param month   The month of the year, i.e. in [1, 12].
- * @param year    The year number, e.g. 2016.
- * @param line    The line in the data file where an error occured, or `NULL`.
+ * @param snapshot   A handle to the snapshot.
+ * @param path       The file containing the geomagnetic model data.
+ * @param day        The day in the month, i.e. in [1,31].
+ * @param month      The month of the year, i.e. in [1, 12].
+ * @param year       The year number, e.g. 2016.
+ * @param line       The line in the data file where an error occured, or
+ * `NULL`.
  * @return On success `PUMAS_RETURN_SUCCESS` is returned otherwise an error
  * code is returned as detailed below.
  *
- * Create a geomagnetic model for the given date (*day*, *month*, *year*) from
- * spherical harmonic coefficients loaded from *path*. If *line* is not *NULL*
- * and a parsing error occured in *path* the corresponding line number is
- * filled. See below for a list of supported data formats.
+ * Create a snapshot of a geomagnetic model at the given date (*day*, *month*,
+ * *year*) from the spherical harmonic coefficients loaded from *path*. If
+ * *line* is not *NULL* and a parsing error occured in *path* the corresponding
+ * line number is filled. See below for a list of supported data formats.
  *
  * __Data formats__
  *
@@ -104,42 +105,55 @@ struct gull_model;
  *
  *     GULL_RETURN_PATH_ERROR       The data file couldn't be found/opened.
  *
- *     GULL_RETURN_MISSING_MODEL    There is no valid model for the
+ *     GULL_RETURN_MISSING_DATA     There is no valid data for the
  * requested date.
  */
-enum gull_return gull_model_create(struct gull_model ** model,
+enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
 	const char * path, int day, int month, int year, int * line);
 
 /**
- * Destroy a geomagnetic model.
+ * Destroy a snapshot.
  *
- * @param model   A handle to the geomagnetic model data.
+ * @param snapshot   A handle to the snapshot.
  *
- * Fully destroy a geomagnetic model and free any allocated memory.
+ * Fully destroy a snapshot and free any allocated memory.
  */
-void gull_model_destroy(struct gull_model ** model);
+void gull_snapshot_destroy(struct gull_snapshot ** snapshot);
 
 /**
- * Create a geomagnetic model.
+ * Compute the geomagnetic field.
  *
- * @param model        A handle to the geomagnetic model data.
+ * @param snapshot     A handle to the snapshot.
  * @param latitude     The geodetic latitude (deg).
  * @param longitude    The geodetic longitude (deg).
  * @param altitude     The altitude (m) above the reference ellipsoid (WGS84).
- * @param magnet       The corresponding magnetic field E, N, U components (T).
+ * @param field        The corresponding magnetic field E, N, U components (T).
  * @return On success `PUMAS_RETURN_SUCCESS` is returned otherwise an error
  * code is returned as detailed below.
  *
  * Compute the geomagnetic field components in East, North, Upward (ENU) from
- * an instantaneous spherical harmonics *model* and at a given location on
- * Earth.
+ * a snapshot, at a given location on Earth.
  *
  * __Error codes__
  *
  *     GULL_RETURN_DOMAIN_ERROR    The provided altitude is not valid.
  */
-enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
-	double longitude, double altitude, double magnet[3]);
+enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
+	double latitude, double longitude, double altitude, double magnet[3]);
+
+/**
+ * Information on a geomagnetic snapshot.
+ *
+ * @param snapshot        A handle to the snapshot.
+ * @param order           The order used for spherical harmonics.
+ * @param altitude_min    The minimum altitude (m) at which the model is valid.
+ * @param altitude_max    The maximum altitude (m) at which the model is valid.
+ *
+ * Get some basic information on a geomagnetic snapshot. Note that any output
+ * parameter can be set to `NULL` if the corresponding property is not needed.
+ */
+void gull_snapshot_info(struct gull_snapshot * snapshot, int * order,
+	double * altitude_min, double * altitude_max);
 
 /**
  * Return a string describing a `gull_return` code.

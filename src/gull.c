@@ -29,8 +29,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-/* Low level data structure for hosting a geomagnetic model. */
-struct gull_model {
+/* Low level data structure for hosting a snapshot of a geomagnetic model. */
+struct gull_snapshot {
 	/* The order of the spherical harmonics. */
 	int order;
 	/* The minimum allowed altitude, in km. */
@@ -53,7 +53,7 @@ const char * gull_error_string(enum gull_return rc)
 		"Value is out of validity range",
 		"Invalid file format",
 		"Not enough memory",
-		"No valid model could be found",
+		"No valid data could be found",
 		"No such file or directory"
 	};
 
@@ -68,11 +68,12 @@ const char * gull_error_function(gull_function_t * caller)
 	if (caller == (gull_function_t * )function) return #function;
 
 	/* API functions with error codes. */
-	REGISTER_FUNCTION( gull_model_create )
-	REGISTER_FUNCTION( gull_model_magnet )
+	REGISTER_FUNCTION( gull_snapshot_create )
+	REGISTER_FUNCTION( gull_snapshot_field )
 
 	/* Other API functions. */
-	REGISTER_FUNCTION( gull_model_destroy )
+	REGISTER_FUNCTION( gull_snapshot_destroy )
+	REGISTER_FUNCTION( gull_snapshot_info )
 	REGISTER_FUNCTION( gull_error_string )
 	REGISTER_FUNCTION( gull_error_function )
 	REGISTER_FUNCTION( gull_error_handler_get )
@@ -160,17 +161,17 @@ static enum gull_return date_decimal(int day, int month, int year,
  * Utility function for accessing the spherical harmonic coefficents given a
  * set of indices (i, j <= i).
  */
-static inline double * get_coeff(struct gull_model * model, int i, int j)
+static inline double * get_coeff(struct gull_snapshot * snapshot, int i, int j)
 {
 	i--;
-	return model->coeff+2*i*(i+3)+4*j;
+	return snapshot->coeff+2*i*(i+3)+4*j;
 }
 
-enum gull_return gull_model_create(struct gull_model ** model,
+enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
 	const char * path, int day, int month, int year, int * line_)
 {
-	GULL_ACKNOWLEDGE(gull_model_create);
-	*model = NULL;
+	GULL_ACKNOWLEDGE(gull_snapshot_create);
+	*snapshot = NULL;
 
 	/* Get the decimal year. */
 	double date;
@@ -223,23 +224,23 @@ enum gull_return gull_model_create(struct gull_model ** model,
 	}
 	if ((ndat == 0) || ((ndat == 1) && (nmax2[0] <= 0))) {
 		fclose(fid);
-		GULL_RETURN(GULL_RETURN_MISSING_MODEL);
+		GULL_RETURN(GULL_RETURN_MISSING_DATA);
 	}
 
 	/* Allocate the new and temporary memory. */
 	int order;
 	if (ndat == 1) order = (nmax1[0] > nmax2[0]) ? nmax1[0] : nmax2[0];
 	else order = (nmax1[0] > nmax1[1]) ? nmax1[0] : nmax1[1];
-	int size = sizeof(struct gull_model)+(2*order*(order+4))*sizeof(double);
-	*model = malloc(size);
-	if (*model == NULL) {
+	int size = sizeof(struct gull_snapshot)+(2*order*(order+4))*sizeof(double);
+	*snapshot= malloc(size);
+	if (*snapshot == NULL) {
 		rc = GULL_RETURN_MEMORY_ERROR;
 		goto exit_on_runtime_error;
 	}
-	memset(*model, 0x0, size);
-	(*model)->order = order;
-	(*model)->coeff = (*model)->data;
-	(*model)->workspace = (*model)->coeff+order*(order+3);
+	memset(*snapshot, 0x0, size);
+	(*snapshot)->order = order;
+	(*snapshot)->coeff = (*snapshot)->data;
+	(*snapshot)->workspace = (*snapshot)->coeff+order*(order+3);
 
 	/*
 	 * This is a valid data set. Let's read the spherical harmonic
@@ -269,7 +270,7 @@ enum gull_return gull_model_create(struct gull_model ** model,
 				&i, &j, &g1, &h1, &g2, &h2);
 			if ((nread != 6) || (j > i) || (i > order))
 				goto exit_on_syntax_error;
-			double * p = get_coeff(*model, i, j);
+			double * p = get_coeff(*snapshot, i, j);
 			if (ndat == 1) {
 				if ((p[0] != 0.) || (p[1] != 0.) ||
 					(p[2] != 0.) || (p[3] != 0.))
@@ -306,15 +307,15 @@ enum gull_return gull_model_create(struct gull_model ** model,
 		const int nc = (order*(order+3))/2;
 		int ic;
 		double * c0, * c1;
-		for (ic = 0, c0 = c1 = (*model)->coeff; ic < nc; ic++, c0 += 4,
-			c1 += 2) {
+		for (ic = 0, c0 = c1 = (*snapshot)->coeff; ic < nc; ic++,
+			c0 += 4, c1 += 2) {
 			c1[0] = c0[0]+c0[2]*h;
 			c1[1] = c0[1]+c0[3]*h;
 		}
 
 		/* Set the altitude range. */
-		(*model)->altmin = altmin[0];
-		(*model)->altmax = altmax[0];
+		(*snapshot)->altmin = altmin[0];
+		(*snapshot)->altmax = altmax[0];
 	}
 	else {
 		/* Interpolate. */
@@ -322,16 +323,16 @@ enum gull_return gull_model_create(struct gull_model ** model,
 		const int nc = (order*(order+3))/2;
 		int ic;
 		double * c0, * c1;
-		for (ic = 0, c0 = c1 = (*model)->coeff; ic < nc; ic++, c0 += 4,
-			c1 += 2) {
+		for (ic = 0, c0 = c1 = (*snapshot)->coeff; ic < nc; ic++,
+			c0 += 4, c1 += 2) {
 			c1[0] = c0[0]*(1.-h)+c0[2]*h;
 			c1[1] = c0[1]*(1.-h)+c0[3]*h;
 		}
 
 		/* Set the altitude range. */
-		(*model)->altmin = (altmin[0] > altmin[1]) ? altmin[0] :
+		(*snapshot)->altmin = (altmin[0] > altmin[1]) ? altmin[0] :
 			altmin[1];
-		(*model)->altmax = (altmax[0] < altmax[1]) ? altmax[0] :
+		(*snapshot)->altmax = (altmax[0] < altmax[1]) ? altmax[0] :
 			altmax[1];
 	}
 
@@ -344,7 +345,7 @@ exit_on_syntax_error:
 
 exit_on_runtime_error:
 	if (fid != NULL) fclose(fid);
-	free(*model);
+	gull_snapshot_destroy(snapshot);
 	GULL_RETURN_FILE(rc, file, line);
 
 #undef	MAX_NAME_SIZE
@@ -352,11 +353,11 @@ exit_on_runtime_error:
 #undef	LINE_WIDTH
 }
 
-void gull_model_destroy(struct gull_model ** model)
+void gull_snapshot_destroy(struct gull_snapshot ** snapshot)
 {
-	if ((model == NULL) || (*model == NULL)) return;
-	free(*model);
-	*model = NULL;
+	if ((snapshot == NULL) || (*snapshot == NULL)) return;
+	free(*snapshot);
+	*snapshot = NULL;
 }
 
 /*
@@ -366,10 +367,10 @@ void gull_model_destroy(struct gull_model ** model)
  * subroutine  'igrf' by D. R. Barraclough and S. R. C. Malin, report no. 71/1,
  * institute of geological sciences, U.K.
  */
-enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
-	double longitude, double altitude, double magnet[3])
+enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
+	double latitude, double longitude, double altitude, double magnet[3])
 {
-	GULL_ACKNOWLEDGE(gull_model_magnet);
+	GULL_ACKNOWLEDGE(gull_snapshot_field);
 
 	const double earths_radius = 6371.2;
 	const double a2 = 40680631.59; /* WGS84. */
@@ -378,7 +379,7 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 
 	/* Check the altitude. */
 	altitude *= 1E-03; /* m -> km. */
-	if ((altitude < model->altmin) || (altitude > model->altmax))
+	if ((altitude < snapshot->altmin) || (altitude > snapshot->altmax))
 		GULL_RETURN(GULL_RETURN_DOMAIN_ERROR);
 
 	/*
@@ -399,8 +400,8 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 	double clat = cos(aa*M_PI/180.);
 
 	longitude *= M_PI/180.;
-	double * const sl = model->workspace;
-	double * const cl = sl+model->order;
+	double * const sl = snapshot->workspace;
+	double * const cl = sl+snapshot->order;
 	sl[0] = sin(longitude);
 	cl[0] = cos(longitude);
 
@@ -418,8 +419,8 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 	clat = clat*cd+aa*sd;
 
 	/* Compute the magnetic field components. */
-	const int npq = (model->order*(model->order+3))/2;
-	double * const p = cl+model->order;
+	const int npq = (snapshot->order*(snapshot->order+3))/2;
+	double * const p = cl+snapshot->order;
 	double * const q = p+npq;
 	aa = sqrt(3.);
 	p[0] = 2.*slat;
@@ -432,10 +433,10 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 	q[3] = aa*(slat*slat-clat*clat);
 
 	double x = 0., y = 0., z = 0.;
-	double rr;
+	double rr = 0.;
 	int k, n = 0, m = 1;
 	const double * coeff;
-	for (k = 0, coeff = model->coeff; k < npq; k++, coeff += 2) {
+	for (k = 0, coeff = snapshot->coeff; k < npq; k++, coeff += 2) {
 		if (m > n) {
 			m = 0;
 			n++;
@@ -488,4 +489,13 @@ enum gull_return gull_model_magnet(struct gull_model * model, double latitude,
 	magnet[2] = -(z*cd-x*sd)*1E-09;	/* Upward. */
 
 	return GULL_RETURN_SUCCESS;
+}
+
+/* Information on a geomagnetic snapshot. */
+void gull_snapshot_info(struct gull_snapshot * snapshot, int * order,
+	double * altitude_min, double * altitude_max)
+{
+	if (order != NULL) *order = snapshot->order;
+	if (altitude_min != NULL) *altitude_min = snapshot->altmin*1E+03;
+	if (altitude_max != NULL) *altitude_max = snapshot->altmax*1E+03;
 }
