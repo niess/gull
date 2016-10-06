@@ -3,9 +3,9 @@
 
 ## Description
 
-GULL provides the instantaneous geomagnetic field in local **E**ast,
-**N**orth, **U**pward coordinates. It is optimised for time independent
-problems. The supported data sets are:
+GULL provides snapshots of the geomagnetic field in local **E**ast,
+**N**orth, **U**pward (**E,N,U**) coordinates. It is optimised for time
+independent problems. The supported data sets are:
 
 * [IGRF 12](http://www.ngdc.noaa.gov/IAGA/vmod/igrf.html)
 * [WWM 2015](https://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml)
