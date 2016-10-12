@@ -75,7 +75,6 @@ typedef void gull_handler_cb(enum gull_return rc, gull_function_t * caller,
  */
 struct gull_snapshot;
 
-
 /**
  * Create a snapshot of a geomagnetic model.
  *
