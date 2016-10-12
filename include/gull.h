@@ -127,18 +127,30 @@ void gull_snapshot_destroy(struct gull_snapshot ** snapshot);
  * @param longitude    The geodetic longitude (deg).
  * @param altitude     The altitude (m) above the reference ellipsoid (WGS84).
  * @param field        The corresponding magnetic field E, N, U components (T).
+ * @param workspace    A pointer to the temporary worspace or `NULL`.
  * @return On success `PUMAS_RETURN_SUCCESS` is returned otherwise an error
  * code is returned as detailed below.
  *
  * Compute the geomagnetic field components in East, North, Upward (ENU) from
- * a snapshot, at a given location on Earth.
+ * a snapshot, at a given location on Earth. The computation requires extensive
+ * temporary storage allocated on the heap. If *workspace* is not `NULL` the
+ * corresponding memory address is returned to the user in order to be used
+ * again in subsequent calls. Otherwise the temporary workspace is freed at
+ * exit.
+ *
+ * This function is thread safe provided that each thread manages its own
+ * *workspace*, which is in particular true if *workspace* is set to `NULL`.
  *
  * __Error codes__
  *
  *     GULL_RETURN_DOMAIN_ERROR    The provided altitude is not valid.
+ *
+ *     GULL_RETURN_MEMORY_ERROR    The temporary workspace could not be
+ * (re)allocated.
  */
 enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
-	double latitude, double longitude, double altitude, double magnet[3]);
+	double latitude, double longitude, double altitude, double magnet[3],
+	double ** worspace);
 
 /**
  * Information on a geomagnetic snapshot.

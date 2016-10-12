@@ -62,7 +62,8 @@ int main()
 	const double longitude = 2.95536402;
 	const double altitude = 1090.;
 	double field[3];
-	gull_snapshot_field(snapshot, latitude, longitude, altitude, field);
+	gull_snapshot_field(snapshot, latitude, longitude, altitude, field,
+		NULL);
 
 	printf("# Geomagnetic field\n");
 	printf("- location   : [%.5lf, %.5lf] (deg)\n",

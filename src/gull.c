@@ -38,11 +38,7 @@ struct gull_snapshot {
 	/* The maximum allowed altitude, in km */
 	double altmax;
 	/* The spherical harmonic coefficients. */
-	double * coeff;
-	/* A workspace for magnetic field computations. */
-	double * workspace;
-	/* A placeholder for data storage. */
-	double data[];
+	double coeff[];
 };
 
 /* Get a return code as a string. */
@@ -231,16 +227,15 @@ enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
 	int order;
 	if (ndat == 1) order = (nmax1[0] > nmax2[0]) ? nmax1[0] : nmax2[0];
 	else order = (nmax1[0] > nmax1[1]) ? nmax1[0] : nmax1[1];
-	int size = sizeof(struct gull_snapshot)+(2*order*(order+4))*sizeof(double);
-	*snapshot= malloc(size);
+	int size = sizeof(struct gull_snapshot)+
+		2*order*(order+3)*sizeof(double);
+	*snapshot = malloc(size);
 	if (*snapshot == NULL) {
 		rc = GULL_RETURN_MEMORY_ERROR;
 		goto exit_on_runtime_error;
 	}
 	memset(*snapshot, 0x0, size);
 	(*snapshot)->order = order;
-	(*snapshot)->coeff = (*snapshot)->data;
-	(*snapshot)->workspace = (*snapshot)->coeff+order*(order+3);
 
 	/*
 	 * This is a valid data set. Let's read the spherical harmonic
@@ -336,6 +331,10 @@ enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
 			altmax[1];
 	}
 
+	/* Free the extra memory and return. */
+	size = sizeof(struct gull_snapshot)+order*(order+3)*sizeof(double);
+	*snapshot= realloc(*snapshot, size);
+
 	return GULL_RETURN_SUCCESS;
 
 exit_on_syntax_error:
@@ -368,7 +367,8 @@ void gull_snapshot_destroy(struct gull_snapshot ** snapshot)
  * institute of geological sciences, U.K.
  */
 enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
-	double latitude, double longitude, double altitude, double magnet[3])
+	double latitude, double longitude, double altitude, double magnet[3],
+	double ** workspace_)
 {
 	GULL_ACKNOWLEDGE(gull_snapshot_field);
 
@@ -381,6 +381,12 @@ enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
 	altitude *= 1E-03; /* m -> km. */
 	if ((altitude < snapshot->altmin) || (altitude > snapshot->altmax))
 		GULL_RETURN(GULL_RETURN_DOMAIN_ERROR);
+
+	/* Configure the temporary work memory. */
+	double * workspace = realloc((workspace_ == NULL) ? NULL : *workspace_,
+		snapshot->order*(snapshot->order+5)*sizeof(*workspace));
+	if (workspace == NULL) GULL_RETURN(GULL_RETURN_MEMORY_ERROR);
+	if (workspace_ != NULL) *workspace_ = workspace;
 
 	/*
 	 * Compute the sine and cosine of the latitude, with protection against
@@ -400,7 +406,7 @@ enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
 	double clat = cos(aa*M_PI/180.);
 
 	longitude *= M_PI/180.;
-	double * const sl = snapshot->workspace;
+	double * const sl = workspace;
 	double * const cl = sl+snapshot->order;
 	sl[0] = sin(longitude);
 	cl[0] = cos(longitude);
@@ -482,6 +488,9 @@ enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
 		}
 		m++;
 	}
+
+	/* Free the temporary memory, if not claimed. */
+	if (workspace_ == NULL) free(workspace);
 
 	/* Fill and return. */
 	magnet[0] = y*1E-09;		/* East.   */
