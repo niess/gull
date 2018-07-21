@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2017 Université Clermont Auvergne, CNRS/IN2P3, LPC
  * Author: Valentin NIESS (niess@in2p3.fr)
- * 
+ *
  * Geomagnetic UtiLities Library (GULL)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,24 +25,28 @@
 extern "C" {
 #endif
 
+#ifndef FILE
+#include <stdio.h>
+#endif
+
 /**
  * Return Codes used by GULL.
  */
 enum gull_return {
-	/** The operation succeeded. */
-	GULL_RETURN_SUCCESS = 0,
-	/** Some input value is out of its validity range. */
-	GULL_RETURN_DOMAIN_ERROR,
-	/** A provided file has a wrong format. */
-	GULL_RETURN_FORMAT_ERROR,
-	/** Some memory couldn't be allocated. */
-	GULL_RETURN_MEMORY_ERROR,
-	/** No valid data could be found. */
-	GULL_RETURN_MISSING_DATA,
-	/** A file couldn't be opened or found. */
-	GULL_RETURN_PATH_ERROR,
-	/** The number of GULL error codes. */
-	GULL_N_RETURNS
+        /** The operation succeeded. */
+        GULL_RETURN_SUCCESS = 0,
+        /** Some input value is out of its validity range. */
+        GULL_RETURN_DOMAIN_ERROR,
+        /** A provided file has a wrong format. */
+        GULL_RETURN_FORMAT_ERROR,
+        /** Some memory couldn't be allocated. */
+        GULL_RETURN_MEMORY_ERROR,
+        /** No valid data could be found. */
+        GULL_RETURN_MISSING_DATA,
+        /** A file couldn't be opened or found. */
+        GULL_RETURN_PATH_ERROR,
+        /** The number of GULL error codes. */
+        GULL_N_RETURNS
 };
 
 /**
@@ -56,10 +60,9 @@ typedef void gull_function_t(void);
 /**
  * Callback for error handling.
  *
- * @param rc        The GULL return code.
- * @param caller    The caller function where the error occured.
- * @param file      The faulty file or `NULL`.
- * @param line      The faulty line or `0`.
+ * @param rc         The GULL return code.
+ * @param caller     The caller API function where the error occured.
+ * @param message    A brief message describing the error.
  *
  * The user might provide its own error handler. It will be called at the
  * return of any GULL library function providing an error code.
@@ -69,8 +72,8 @@ typedef void gull_function_t(void);
  * This callback **must** be thread safe if GULL is used in multithreaded
  * applications.
  */
-typedef void gull_handler_cb(enum gull_return rc, gull_function_t * caller,
-	const char * file, int line);
+typedef void gull_handler_cb(
+    enum gull_return rc, gull_function_t * caller, const char * message);
 
 /**
  * Opaque structure for handling snapshots of the geomagnetic field.
@@ -84,16 +87,13 @@ struct gull_snapshot;
  * @param path       The file containing the geomagnetic model data.
  * @param day        The day in the month, i.e. in [1,31].
  * @param month      The month of the year, i.e. in [1, 12].
- * @param year       The year number, e.g. 2016.
- * @param line       The line in the data file where an error occured, or
- * `NULL`.
- * @return On success `PUMAS_RETURN_SUCCESS` is returned otherwise an error
+ * @param year       The year number, e.g. 2018.
+ * @return On success `GULL_RETURN_SUCCESS` is returned otherwise an error
  * code is returned as detailed below.
  *
  * Create a snapshot of a geomagnetic model at the given date (*day*, *month*,
- * *year*) from the spherical harmonic coefficients loaded from *path*. If
- * *line* is not *NULL* and a parsing error occured in *path* the corresponding
- * line number is filled. See below for a list of supported data formats.
+ * *year*) from the spherical harmonic coefficients loaded from *path*. See
+ * below for a list of supported data formats.
  *
  * __Data formats__
  *
@@ -110,7 +110,7 @@ struct gull_snapshot;
  * requested date.
  */
 enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
-	const char * path, int day, int month, int year, int * line);
+    const char * path, int day, int month, int year);
 
 /**
  * Destroy a snapshot.
@@ -130,7 +130,7 @@ void gull_snapshot_destroy(struct gull_snapshot ** snapshot);
  * @param altitude     The altitude (m) above the reference ellipsoid (WGS84).
  * @param field        The corresponding magnetic field E, N, U components (T).
  * @param workspace    A pointer to the temporary worspace or `NULL`.
- * @return On success `PUMAS_RETURN_SUCCESS` is returned otherwise an error
+ * @return On success `GULL_RETURN_SUCCESS` is returned otherwise an error
  * code is returned as detailed below.
  *
  * Compute the geomagnetic field components in East, North, Upward (ENU) from
@@ -151,8 +151,8 @@ void gull_snapshot_destroy(struct gull_snapshot ** snapshot);
  * (re)allocated.
  */
 enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
-	double latitude, double longitude, double altitude, double magnet[3],
-	double ** worspace);
+    double latitude, double longitude, double altitude, double magnet[3],
+    double ** worspace);
 
 /**
  * Information on a geomagnetic snapshot.
@@ -166,19 +166,7 @@ enum gull_return gull_snapshot_field(struct gull_snapshot * snapshot,
  * parameter can be set to `NULL` if the corresponding property is not needed.
  */
 void gull_snapshot_info(struct gull_snapshot * snapshot, int * order,
-	double * altitude_min, double * altitude_max);
-
-/**
- * Return a string describing a `gull_return` code.
- *
- * @param rc    The return code.
- * @return A static string.
- *
- * This function is analog to the standard C `strerror` function but specific
- * to GULL return codes. Contrary to its standard library analog it is thread
- * safe.
- */
-const char * gull_error_string(enum gull_return rc);
+    double * altitude_min, double * altitude_max);
 
 /**
  * Return a string describing a GULL library function.
@@ -210,27 +198,6 @@ gull_handler_cb * gull_error_handler_get(void);
  * This function is **not** thread safe.
  */
 void gull_error_handler_set(gull_handler_cb * handler);
-
-/**
- * Print a formated summary of error data.
- *
- * @param stream      The output stream where to print.
- * @param rc          The error return code.
- * @param function    The faulty function or `NULL`.
- * @param file        The faulty file or `NULL`.
- * @param line        The faulty line or `0`.
- *
- * The *function* and *file* parameters are optional and can be set to `NULL`.
- * The output summary is formated in JSON.
- *
- * __Warnings__
- *
- * This function is **not** thread safe. A lock must be set to ensure proper
- * printout in multithreaded applications, if writing concurrently to a same
- * *stream*.
- */
-void gull_error_print(FILE*  stream, enum gull_return rc,
-	gull_function_t * function, const char * file, int line);
 
 #ifdef __cplusplus
 }

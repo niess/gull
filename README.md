@@ -25,5 +25,5 @@ The API documentation can be found [here](https://niess.github.io/gull/docs/inde
 as well as some basic examples of usage.
 
 ## License
-The GULL library is  under the **GNU LGPLv3** license. See the provided
-`LICENSE` and `COPYING.LESSER` files.
+The GULL library is under the **GNU LGPLv3** license. See the provided
+[LICENSE](LICENSE) and [COPYING.LESSER](COPYING.LESSER) files.
