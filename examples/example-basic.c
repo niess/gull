@@ -73,5 +73,5 @@ int main()
 
         /* Finalise and exit to the OS. */
         gull_snapshot_destroy(&snapshot);
-        exit(EXIT_FAILURE);
+        exit(EXIT_SUCCESS);
 }

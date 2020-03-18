@@ -1,0 +1,29 @@
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  Linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        make
+        make examples
+
+    - name: Test
+      run: ./bin/example-basic
+
+  OSX:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        make
+        make examples
+
+    - name: Test
+      run: ./bin/example-basic

@@ -1,10 +1,16 @@
-CFLAGS := -O2 -std=c99 -pedantic -fPIC -Wall
-INCLUDE := -Iinclude
-LIBS := -lm
+CFLAGS = -O3 -std=c99 -pedantic -Wall
+INCLUDE = -Iinclude
+LIBS = -lm
+
+SOEXT = so
+SYS = $(shell uname -s)
+ifeq ($(SYS), Darwin)
+	SOEXT = dylib
+endif
 
 .PHONY: examples lib clean
 
-lib: lib/libgull.so
+lib: lib/libgull.$(SOEXT)
 	@rm -f *.o
 
 clean:
@@ -12,10 +18,17 @@ clean:
 
 examples: bin/example-basic
 
-lib/lib%.so: src/%.c include/%.h
+SHARED = -shared
+RPATH  = '-Wl,-rpath,$$ORIGIN/../lib'
+ifeq ($(SYS), Darwin)
+	SHARED = -dynamiclib -Wl,-install_name,@rpath/libgull.$(SOEXT)
+	RPATH  = -Wl,-rpath,@loader_path/../lib
+endif
+
+lib/lib%.$(SOEXT): src/%.c include/%.h
 	@mkdir -p lib
-	@gcc -o $@ $(CFLAGS) $(INCLUDE) -shared $< $(LIBS)
+	@gcc -o $@ $(CFLAGS) -fPIC $(INCLUDE) $(LDFLAGS) $(SHARED) $< $(LIBS)
 
 bin/example-%: examples/example-%.c lib
 	@mkdir -p bin
-	@gcc -o $@ $(CFLAGS) $(INCLUDE) $< -Llib -Wl,-rpath $(PWD)/lib -lgull
+	@gcc -o $@ $(CFLAGS) $(INCLUDE) $< -Llib $(RPATH) -lgull
