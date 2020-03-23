@@ -25,7 +25,7 @@ void handle_error(
         exit(EXIT_FAILURE);
 }
 
-int main()
+int main(int argc, char * argv[])
 {
         /** First let us set an error handler for GULL library functions. Most
          * of GULL's library functions return a `gull_return` code that cand be
@@ -38,8 +38,8 @@ int main()
          * and show how to access its meta-data.
          */
         /* Create a snapshot of the magnetic field. */
-        const char * path = "share/data/IGRF12.COF";
-        const int day = 21, month = 7, year = 2018;
+        const char * path = (argc == 1) ? "share/data/IGRF13.COF" : argv[1];
+        const int day = 23, month = 3, year = 2020;
         gull_snapshot_create(&snapshot, path, day, month, year);
 
         int order;

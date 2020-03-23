@@ -234,7 +234,8 @@ enum gull_return gull_snapshot_create(struct gull_snapshot ** snapshot,
         if ((ndat == 0) || ((ndat == 1) && (nmax2[0] <= 0))) {
                 fclose(fid);
                 GULL_ERROR_FORMAT(
-                    GULL_RETURN_MISSING_DATA, "missing data in file `s`", path);
+                    GULL_RETURN_MISSING_DATA, "missing data in file `%s`",
+                    path);
         }
 
         /* Allocate the new and temporary memory. */

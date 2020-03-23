@@ -1,4 +1,4 @@
-# GULL
+# GULL [![Tests](https://github.com/niess/gull/workflows/Tests/badge.svg)](https://github.com/niess/gull/actions)
 ( **G**eomagnetic **U**ti**L**ities **L**ibrary )
 
 ## Description
@@ -7,8 +7,8 @@ GULL provides snapshots of the geomagnetic field in local **E**ast,
 **N**orth, **U**pward (**E,N,U**) coordinates. It is optimised for time
 independent problems. The supported data sets are:
 
-* International Geomagnetic Reference Field ([IGRF 12](http://www.ngdc.noaa.gov/IAGA/vmod/igrf.html))
-* World Magnetic Model ([WWM 2015](https://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml))
+* International Geomagnetic Reference Field ([IGRF 13](http://www.ngdc.noaa.gov/IAGA/vmod/igrf.html))
+* World Magnetic Model ([WMM 2020](https://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml))
 
 Both have worldwide coverage. The library is written in C99 with the Standard
 Library as sole dependency.
